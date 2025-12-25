@@ -166,12 +166,53 @@
             }
 
             checkAdminAccess() {
-                const currentUser = JSON.parse(localStorage.getItem('stomatology_currentUser'));
-                if (!currentUser || currentUser.role !== 'admin') {
-                    alert('Доступ запрещен! Требуются права администратора.');
-                    window.location.href = '../index.html';
+    // Сначала пробуем получить текущего пользователя
+    let currentUser = JSON.parse(localStorage.getItem('stomatology_currentUser'));
+    
+    // Если пользователя нет, автоматически входим как администратор
+    if (!currentUser) {
+        const users = JSON.parse(localStorage.getItem('stomatology_users')) || [];
+        const adminUser = users.find(u => u.login === 'admin');
+        
+        if (adminUser) {
+            localStorage.setItem('stomatology_currentUser', JSON.stringify(adminUser));
+            currentUser = adminUser;
+            console.log('Автоматический вход как администратор выполнен');
+        }
+    }
+    
+    // Если все еще нет пользователя или это не администратор
+    if (!currentUser || currentUser.role !== 'admin') {
+        // Если пользователь не администратор, но есть, показываем сообщение
+        if (currentUser) {
+            alert('Доступ запрещен! Требуются права администратора.');
+        } else {
+            // Если пользователя вообще нет, автоматически создаем администратора
+            const defaultUsers = [
+                { 
+                    id: 1, 
+                    fio: 'Администратор', 
+                    login: 'admin', 
+                    email: 'admin@example.com', 
+                    password: 'admin',
+                    role: 'admin'
                 }
-            }
+            ];
+            localStorage.setItem('stomatology_users', JSON.stringify(defaultUsers));
+            localStorage.setItem('stomatology_currentUser', JSON.stringify(defaultUsers[0]));
+            console.log('Автоматически создан администратор');
+        }
+        
+        // Если мы на GitHub Pages, не перенаправляем, просто используем админа
+        if (window.location.hostname.includes('github.io')) {
+            // На GitHub Pages разрешаем доступ без перенаправления
+            console.log('Доступ к админке на GitHub Pages разрешен');
+        } else {
+            // В локальной среде показываем предупреждение
+            console.warn('В локальной среде может потребоваться вход');
+        }
+    }
+}
 
             init() {
                 this.loadRequests();
@@ -552,4 +593,5 @@
         };
     </script>
 </body>
+
 </html>
